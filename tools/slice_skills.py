@@ -18,9 +18,10 @@ import cv2
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parent.parent
-DRAGONS = ROOT / "assets" / "dragons"
-OUT = ROOT / "frontend" / "public" / "dragons"
+ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
+sys.path.insert(0, str(ROOT))
+
+from lib.paths import DRAGONS, OUT
 ICON_ORDER = ["passive", "basic", "skill", "ultimate"]
 ICON_WIDTH = 256        # exported icon width (they are shown at ~64-96 px)
 VFX_MAX = 384           # longest side of an exported effect

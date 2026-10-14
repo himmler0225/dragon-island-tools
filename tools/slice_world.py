@@ -18,12 +18,12 @@ import cv2
 import numpy as np
 from PIL import Image
 
-sys.path.insert(0, str(Path(__file__).parent))
-from slice_sheet import key_magenta  # noqa: E402
+ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
+sys.path.insert(0, str(ROOT))
 
-ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "assets"
-PUBLIC = ROOT / "frontend" / "public"
+from lib.image import key_magenta
+from lib.paths import ASSETS, PUBLIC
+
 RESOURCES = ["gold", "exp", "stone"]
 
 

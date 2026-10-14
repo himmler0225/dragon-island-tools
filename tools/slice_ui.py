@@ -17,13 +17,13 @@ import cv2
 import numpy as np
 from PIL import Image
 
-sys.path.insert(0, str(Path(__file__).parent))
-from slice_sheet import key_magenta  # noqa: E402
-from slice_world import main_part  # noqa: E402
+ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
+sys.path.insert(0, str(ROOT))
 
-ROOT = Path(__file__).resolve().parent.parent
-UI = ROOT / "assets" / "ui"
-OUT = ROOT / "frontend" / "public" / "ui"
+from lib.image import key_magenta
+from lib.paths import ASSETS, UI_OUT
+
+UI = ASSETS / "ui"
 
 
 def remove_plain_background(img, tol=18):
@@ -48,13 +48,27 @@ def remove_plain_background(img, tol=18):
     return out.crop(out.getchannel("A").getbbox())
 
 
+def main_part(img, min_share=0.02):
+    """Drop specks: keep opaque regions with at least `min_share` of the biggest region's area."""
+    arr = np.asarray(img).copy()
+    solid = (arr[..., 3] > 40).astype(np.uint8)
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(cv2.dilate(solid, np.ones((9, 9), np.uint8)))
+    if n <= 2:
+        return img.crop(img.getchannel("A").getbbox())
+    biggest = stats[1:, 4].max()
+    keep = [i for i in range(1, n) if stats[i][4] >= min_share * biggest]
+    arr[~np.isin(labels, keep)] = 0
+    out = Image.fromarray(arr, "RGBA")
+    return out.crop(out.getchannel("A").getbbox())
+
+
 def main():
-    OUT.mkdir(parents=True, exist_ok=True)
+    UI_OUT.mkdir(parents=True, exist_ok=True)
     logo = remove_plain_background(Image.open(UI / "logo.png"))
     logo.thumbnail((640, 640), Image.LANCZOS)
-    logo.save(OUT / "logo.png", optimize=True)
+    logo.save(UI_OUT / "logo.png", optimize=True)
 
-    Image.open(UI / "loading" / "background.png").convert("RGB").save(OUT / "loading_bg.jpg", quality=86, optimize=True)
+    Image.open(UI / "loading" / "background.png").convert("RGB").save(UI_OUT / "loading_bg.jpg", quality=86, optimize=True)
 
     bar = key_magenta(Image.open(UI / "loading" / "bar.png"))
     rows = (np.asarray(bar)[..., 3] > 40).any(axis=1)
@@ -70,7 +84,7 @@ def main():
         x0 -= 1
     while x1 < a.shape[1] - 1 and not mid[x1 + 1]:
         x1 += 1
-    # vertical extent: the transparent run through the middle row (not the air above/below the frame)
+    # vertical extent: the transparent run through the middle column
     col, ym = a[:, (x0 + x1) // 2], a.shape[0] // 2
     y0 = ym
     while y0 > 0 and not col[y0 - 1]:
@@ -78,12 +92,12 @@ def main():
     y1 = ym
     while y1 < a.shape[0] - 1 and not col[y1 + 1]:
         y1 += 1
-    frame.save(OUT / "loading_frame.png", optimize=True)
-    fill.save(OUT / "loading_fill.png", optimize=True)
+    frame.save(UI_OUT / "loading_frame.png", optimize=True)
+    fill.save(UI_OUT / "loading_fill.png", optimize=True)
     spec = {"frame": list(frame.size), "fill": list(fill.size),
             "hole": [round(x0 / frame.width, 4), round(y0 / frame.height, 4),
                      round((x1 - x0) / frame.width, 4), round((y1 - y0) / frame.height, 4)]}
-    (OUT / "loading_bar.json").write_text(json.dumps(spec))
+    (UI_OUT / "loading_bar.json").write_text(json.dumps(spec))
     print("logo", logo.size, "| frame", frame.size, "fill", fill.size, "hole", spec["hole"])
 
 

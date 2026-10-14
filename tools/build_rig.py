@@ -4,7 +4,7 @@ Sources (flat magenta background, every piece a separate island), per dragon in
 assets/dragons/<id>/parts/:
   body.png  head(+neck), torso, near/far wing, 3 tail pieces (+ optional jaw)
   legs.png  4 legs (near fore, near hind, far fore, far hind) x 3 pieces each
-Layouts live in tools/rig_configs.py.
+Layouts live in tools/rig_configs/.
 
 Each piece is cut along its own outline (connected component), placed into a standing "rest pose"
 in rig space, and gets a joint (pivot) where it rotates. The game does the forward kinematics,
@@ -22,13 +22,15 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
-sys.path.insert(0, str(Path(__file__).parent))
-from rig_configs import CONFIGS, LEG_SIDES  # noqa: E402
-from slice_sheet import key_distance, key_magenta  # noqa: E402
+ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
+sys.path.insert(0, str(ROOT))
 
-ROOT = Path(__file__).resolve().parent.parent
+from lib.image import key_distance, key_magenta, components, cut, shade
+from lib.paths import ROOT
+from rig_configs import CONFIGS, LEG_SIDES
+
 SEGMENTS = ("upper", "lower", "paw")
 
 OUT_ROOT = ROOT / "frontend" / "public" / "dragons"
@@ -50,31 +52,6 @@ CAPS = [(f"{leg}_{a}", f"{leg}_{b}", r) for leg in LEG_SIDES for a, b, r in (("u
        [("torso", "tail_base", 0.5), ("tail_base", "tail_mid", 0.5), ("tail_mid", "tail_tip", 0.5), ("tail_tip", "tail_fan", 0.5), ("torso", "head", 0.4)]
 
 TARGET_HEIGHT = 416   # exported rig height in px (game draws it at 0.5 -> ~208 px like the sprites)
-
-
-def components(img):
-    """[(bbox, mask)] for every opaque island bigger than 3000 px."""
-    alpha = np.asarray(img)[..., 3]
-    solid = cv2.morphologyEx((alpha > 60).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
-    n, labels, stats, _ = cv2.connectedComponentsWithStats(solid)
-    out = []
-    for i in range(1, n):
-        x, y, w, h, area = (int(v) for v in stats[i])
-        if area < 3000:
-            continue
-        # keep the soft edge: grow the island mask a little and take the real alpha inside it
-        mask = cv2.dilate((labels == i).astype(np.uint8), np.ones((7, 7), np.uint8))
-        out.append(((x, y, w, h), mask))
-    return out
-
-
-def cut(img, bbox, mask, pad=4):
-    x, y, w, h = bbox
-    x0, y0 = max(0, x - pad), max(0, y - pad)
-    x1, y1 = min(img.width, x + w + pad), min(img.height, y + h + pad)
-    arr = np.asarray(img)[y0:y1, x0:x1].copy()
-    arr[..., 3] = (arr[..., 3] * mask[y0:y1, x0:x1]).astype(np.uint8)
-    return Image.fromarray(arr, "RGBA"), (x - x0, y - y0)   # piece, offset of bbox inside it
 
 
 def align_replacement(old, at, path, keep=0.6):
@@ -123,10 +100,10 @@ def split_tallest(col, which="tallest"):
     (x, y, w, h), mask = col[i]
     rows = (mask[y:y + h, x:x + w] > 0).sum(axis=1)
     lo, hi = int(h * 0.3), int(h * 0.75)
-    cut = lo + int(np.argmin(rows[lo:hi]))
+    cut_at = lo + int(np.argmin(rows[lo:hi]))
     top, bot = mask.copy(), mask.copy()
-    top[y + cut:] = 0
-    bot[:y + cut] = 0
+    top[y + cut_at:] = 0
+    bot[:y + cut_at] = 0
     def box(m):
         ys, xs = np.nonzero(m)
         return (int(xs.min()), int(ys.min()), int(xs.max() - xs.min() + 1), int(ys.max() - ys.min() + 1))
@@ -149,10 +126,6 @@ def rotate_about(img, at, centre, deg):
     big = big.rotate(-deg, center=c, resample=Image.BICUBIC)   # PIL turns counter-clockwise
     box = big.getchannel("A").getbbox()
     return big.crop(box), (at[0] - pad + box[0], at[1] - pad + box[1])
-
-
-def shade(img, k):
-    return ImageEnhance.Brightness(img).enhance(k)
 
 
 def solid_x(img, y0, y1):
@@ -350,15 +323,15 @@ def split_crest(rig, spec):
     head = next(b for b in rig["bones"] if b["name"] == "head")
     img = Image.open(OUT / "head.png").convert("RGBA")
     w, h = img.size
-    cut = int(spec["cut"] * h)
+    cut_at = int(spec["cut"] * h)
     rows = np.arange(h)[:, None]
     arr = np.asarray(img).astype(np.float32)
     crest, rest = arr.copy(), arr.copy()
-    crest[..., 3] *= np.clip((cut + 12 - rows) / 6, 0, 1)        # crest: everything above cut (+overlap)
-    rest[..., 3] *= np.clip((rows - cut + 3) / 6, 0, 1)          # head: everything below the cut
+    crest[..., 3] *= np.clip((cut_at + 12 - rows) / 6, 0, 1)        # crest: everything above cut (+overlap)
+    rest[..., 3] *= np.clip((rows - cut_at + 3) / 6, 0, 1)          # head: everything below the cut
     if spec.get("drop"):
         # no crest bone: the head simply ends at the cut, with a soft edge
-        rest[..., 3] = arr[..., 3] * np.clip((rows - cut + 6) / 10, 0, 1)
+        rest[..., 3] = arr[..., 3] * np.clip((rows - cut_at + 6) / 10, 0, 1)
         Image.fromarray(rest.astype(np.uint8), "RGBA").save(OUT / "head.png", optimize=True)
         (OUT / "crest.png").unlink(missing_ok=True)
         return

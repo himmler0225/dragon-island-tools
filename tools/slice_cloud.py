@@ -11,18 +11,17 @@ from pathlib import Path
 
 from PIL import Image
 
-sys.path.insert(0, str(Path(__file__).parent))
-from build_rig import components, cut  # noqa: E402
-from slice_sheet import key_magenta  # noqa: E402
+ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
+sys.path.insert(0, str(ROOT))
 
-ROOT = Path(__file__).resolve().parent.parent
-DRAGONS = ROOT / "assets" / "dragons"
-OUT = ROOT / "frontend" / "public" / "dragons"
+from lib.image import key_magenta
+from lib.paths import DRAGONS, OUT
 
 
 def main(ids):
     for dragon_id in ids:
         img = key_magenta(Image.open(DRAGONS / dragon_id / "cloud.png"))
+        from lib.image import components, cut
         parts = sorted(components(img), key=lambda c: -c[0][2] * c[0][3])
         dst = OUT / dragon_id
         dst.mkdir(parents=True, exist_ok=True)
@@ -33,7 +32,7 @@ def main(ids):
             piece, _ = cut(img, bbox, mask)
             piece.thumbnail((320, 320), Image.LANCZOS)
             piece.save(dst / f"cloud_{k}.png", optimize=True)
-        print(f"{dragon_id}: cloud_main {main_cloud.size} + {len(puffs)} puffs")
+        print(f"{dragon_id}: cloud_main {main_cloud.size} + {len(puffs)} puffs  -> {OUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
