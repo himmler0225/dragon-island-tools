@@ -1,6 +1,6 @@
-"""Rồng Vàng: feathered golden dragon that walks upright on its hind legs, arms swaying in front.
+"""Gold Dragon: feathered golden dragon that walks upright on its hind legs, arms swaying in front.
 
-Rồng Bạc is the same drawing recoloured (pieces at identical sheet positions), so both use this layout
+Silver Dragon is the same drawing recoloured (pieces at identical sheet positions), so both use this layout
 through `layout(id, name)`.
 """
 from lib.paths import DRAGONS

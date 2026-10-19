@@ -1,5 +1,5 @@
-"""Phượng Hoàng Lửa: golden fire phoenix-dragon, walks on 4 legs and flies like Hắc Long.
-Phượng Hoàng Băng is the same sheets recoloured (pieces at the same positions) - shares this layout
+"""Fire Phoenix: golden fire phoenix-dragon, walks on 4 legs and flies like the Black Dragon.
+Ice Phoenix is the same sheets recoloured (pieces at the same positions) - shares this layout
 through `layout(id, name)`.
 
 parts/body.png: head (short crest), torso, near wing, far wing, 3 tail slices; parts/legs.png: 4

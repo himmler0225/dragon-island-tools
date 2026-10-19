@@ -1,5 +1,5 @@
-"""Hắc Long: dark winged four-legged dragon. Thần Long is the same drawing recoloured (pieces at the
-same sheet positions), so both use this layout through `layout(id, name, wing_root)`."""
+"""Black Dragon: dark winged four-legged dragon. Celestial Dragon is the same drawing recoloured (pieces at
+the same sheet positions), so both use this layout through `layout(id, name, wing_root)`."""
 from lib.paths import DRAGONS
 
 # far legs are only a little darker (0.8): any darker and they vanish into the body, so the walk

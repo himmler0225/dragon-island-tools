@@ -6,26 +6,26 @@ animates them all with the same code; a species may add optional bones (e.g. "ja
 Each module exports a single `CONFIG` dict consumed by tools/build_rig.py.
 This package's __init__ aggregates them into the `CONFIGS` dict expected by the pipeline.
 """
-from . import rong_bang_xanh_bien, rong_cay_xanh_la, rong_lua_do
-from . import phuong_hoang_bang, phuong_hoang_lua
-from . import hac_long, hai_long, ki_lan, rong_bac, rong_dat_nau, rong_vang, rong_xuong, than_long, tu_xa_long, tuan_long
+from . import ice_dragon, forest_dragon, earth_dragon, fire_dragon
+from . import ice_phoenix, fire_phoenix
+from . import black_dragon, sea_dragon, qilin, silver_dragon, gold_dragon, bone_dragon, celestial_dragon, void_serpent, stag_dragon
 
 CONFIGS = {
-    "hac_long":   hac_long.CONFIG,
-    "rong_xuong": rong_xuong.CONFIG,
-    "tuan_long":  tuan_long.CONFIG,
-    "hai_long":    hai_long.CONFIG,
-    "ki_lan":      ki_lan.CONFIG,
-    "tu_xa_long":  tu_xa_long.CONFIG,
-    "phuong_hoang_lua": phuong_hoang_lua.CONFIG,
-    "phuong_hoang_bang": phuong_hoang_bang.CONFIG,
-    "rong_dat_nau": rong_dat_nau.CONFIG,
-    "rong_bang_xanh_bien": rong_bang_xanh_bien.CONFIG,
-    "rong_lua_do": rong_lua_do.CONFIG,
-    "rong_cay_xanh_la": rong_cay_xanh_la.CONFIG,
-    "rong_vang":   rong_vang.CONFIG,
-    "rong_bac":    rong_bac.CONFIG,
-    "than_long":   than_long.CONFIG,
+    "hac_long":   black_dragon.CONFIG,
+    "rong_xuong": bone_dragon.CONFIG,
+    "tuan_long":  stag_dragon.CONFIG,
+    "hai_long":   sea_dragon.CONFIG,
+    "ki_lan":     qilin.CONFIG,
+    "tu_xa_long": void_serpent.CONFIG,
+    "phuong_hoang_lua": fire_phoenix.CONFIG,
+    "phuong_hoang_bang": ice_phoenix.CONFIG,
+    "rong_dat_nau": earth_dragon.CONFIG,
+    "rong_bang_xanh_bien": ice_dragon.CONFIG,
+    "rong_lua_do": fire_dragon.CONFIG,
+    "rong_cay_xanh_la": forest_dragon.CONFIG,
+    "rong_vang":   gold_dragon.CONFIG,
+    "rong_bac":    silver_dragon.CONFIG,
+    "than_long":   celestial_dragon.CONFIG,
 }
 
 # shared across all species
