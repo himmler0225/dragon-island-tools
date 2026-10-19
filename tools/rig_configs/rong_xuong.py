@@ -6,11 +6,13 @@ from lib.paths import DRAGONS
 
 CONFIG = dict(
     name="Rồng Xương",
+    size=0.88,   # on-screen size vs the others (bone gaps count as empty, so area alone makes it too big)
     body_src=DRAGONS / "rong_xuong" / "parts" / "body.png",
     legs_src=DRAGONS / "rong_xuong" / "parts" / "legs.png",
     legs_crop=(0, 455, 1536, 1024),
     far_shade=0.82, wing_far_shade=0.78,
-    leg_scale=1.15, leg_pull=0, ground=1218,
+    # legs 0.95 (were 1.15 and read too big for the body); ground raised with them so the hips stay put
+    leg_scale=0.95, leg_pull=(45, 30), ground=1140,   # bone knobs overlap so the knee never gapes
     body={
         "wing_far":  dict(src=(548, 272), at=(353, 150)),
         "tail_tip":  dict(src=(1417, 649), at=(1190, 536)),
@@ -32,6 +34,10 @@ CONFIG = dict(
         "tail_tip": (1210, 735),
     },
     parents={"jaw": "head"},
-    motion={"sleepTail": [0.06, 0.08, 0.1]},
-    legs={"hind_near": dict(col=1, x=630), "hind_far": dict(col=2, x=760)},   # one leg forward, one back
+    # stance: far foot a step ahead when standing; idleHover: rests in the air, wings beating;
+    # flyHang: its short legs hang down in flight (trailing back they read as tucked)
+    motion={"sleepTail": [0.06, 0.08, 0.1], "stance": [0, -70], "idleHover": 70, "flyHang": [0.35, 0.35]},
+    # a biped: both hips sit together under the pelvis (far one a touch behind, for depth) so the two
+    # legs scissor around the same point; set apart, they met in the middle and read as one leg stepping
+    legs={"hind_near": dict(col=1, x=690), "hind_far": dict(col=2, x=715)},
 )

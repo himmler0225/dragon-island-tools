@@ -2,6 +2,7 @@
 
   assets/dragons/<id>/skills/icons.png  2x2 grid: passive, basic, skill, ultimate (framed cards on black)
   assets/dragons/<id>/skills/vfx.png    4x2 grid of glowing effects on pure black
+  assets/dragons/<id>/skills/vfx2.png   optional second 4x2 sheet -> vfx_9 .. vfx_16
 
 Writes frontend/public/dragons/<id>/skills/:
   icon_passive.png ... icon_ultimate.png   black outside the card frame made transparent
@@ -91,7 +92,13 @@ def placeholder_icon(effect, slot, size=ICON_WIDTH):
 
 
 def vfx(cell, pad=6):
-    rgb = np.asarray(cell.convert("RGB")).copy()
+    rgb = np.asarray(cell.convert("RGB")).astype(np.float32)
+    # black point: some sheets come back on a dark grey (~30-40), not pure black. Drawn with ADD
+    # blending that grey brightens everything behind the effect - on the sunny battle ground it
+    # showed as white boxes. The cell border is background: pull its level down to 0.
+    border = np.concatenate([rgb[:4].reshape(-1, 3), rgb[-4:].reshape(-1, 3), rgb[:, :4].reshape(-1, 3), rgb[:, -4:].reshape(-1, 3)])
+    black = float(np.percentile(border.max(axis=1), 60)) + 4
+    rgb = ((rgb - black) * 255 / (255 - black)).clip(0, 255).astype(np.uint8)
     # drop slivers of a neighbouring effect that spill over the cell edge: always keep the biggest
     # glow region; drop smaller ones that touch the left/right border
     lit = (rgb.max(axis=2) > 10).astype(np.uint8)
@@ -115,6 +122,9 @@ def main(ids):
         effects = [vfx(cell) for cell in grid(Image.open(src / "vfx.png"), 4, 2)]
         for k, fx in enumerate(effects, 1):
             fx.save(dst / f"vfx_{k}.png", optimize=True)
+        if (src / "vfx2.png").exists():   # optional second sheet (more skills) -> vfx_9 .. vfx_16
+            for k, cell in enumerate(grid(Image.open(src / "vfx2.png"), 4, 2), 9):
+                vfx(cell).save(dst / f"vfx_{k}.png", optimize=True)
         if (src / "icons.png").exists():
             for name, cell in zip(ICON_ORDER, icon_cells(Image.open(src / "icons.png"))):
                 icon(cell).save(dst / f"icon_{name}.png", optimize=True)
