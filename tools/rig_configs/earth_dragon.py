@@ -8,10 +8,10 @@ Older sheets: parts/body_old2.png, legs_old2.png.
 """
 from lib.paths import DRAGONS
 
-P = DRAGONS / "rong_dat_nau" / "parts"
+P = DRAGONS / "earth_dragon" / "parts"
 
 CONFIG = dict(
-    size=0.85,   # a bit smaller than the bigger dragons
+    size=0.7,    # clearly smaller than the bigger dragons (baby dragons)
     name="Rồng Đất",
     body_src=P / "body.png",
     legs_src=P / "legs.png",

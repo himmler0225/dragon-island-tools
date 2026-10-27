@@ -6,9 +6,9 @@ from lib.paths import DRAGONS
 
 CONFIG = dict(
     name="Tuấn Long",
-    body_src=DRAGONS / "tuan_long" / "parts" / "body.png",
-    legs_src=DRAGONS / "tuan_long" / "parts" / "legs.png",
-    far_shade=0.8, wing_far_shade=0.62,
+    body_src=DRAGONS / "stag_dragon" / "parts" / "body.png",
+    legs_src=DRAGONS / "stag_dragon" / "parts" / "legs.png",
+    far_shade=0.8, wing_far_shade=0.76,
     # knee pulled in 48 px (was 30): the thigh and shin read as one leg instead of stacked clumps
     leg_scale=0.42, leg_pull=(70, 50), ground=1080,
     body={

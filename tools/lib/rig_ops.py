@@ -13,7 +13,8 @@ def turn_point(pt, centre, deg):
 
 def rotate_about(img, at, centre, deg):
     """Turn a piece placed at `at` (layout top-left) about layout point `centre`; returns (img, at)."""
-    pad = int(np.hypot(*img.size)) // 2 + 4
+    # room for the whole piece swinging about `centre`, which can be at its edge (a feather's base)
+    pad = int(np.hypot(*img.size)) + 4
     big = Image.new("RGBA", (img.width + 2 * pad, img.height + 2 * pad))
     big.paste(img, (pad, pad))
     c = (centre[0] - at[0] + pad, centre[1] - at[1] + pad)
@@ -29,12 +30,13 @@ def solid_x(img, y0, y1):
     return float(xs.mean()) if len(xs) else img.width / 2
 
 
-def split_tallest(col, which="tallest"):
-    """Split one leg piece at its narrowest row (middle 30-75% of height) into two pieces."""
+def split_tallest(col, which="tallest", band=(0.3, 0.75)):
+    """Split one leg piece at its narrowest row (within `band` of its height, default the middle
+    30-75%) into two pieces."""
     i = len(col) - 1 if which == "last" else max(range(len(col)), key=lambda k: col[k][0][3])
     (x, y, w, h), mask = col[i]
     rows = (mask[y:y + h, x:x + w] > 0).sum(axis=1)
-    lo, hi = int(h * 0.3), int(h * 0.75)
+    lo, hi = int(h * band[0]), int(h * band[1])
     cut_at = lo + int(np.argmin(rows[lo:hi]))
     top, bot = mask.copy(), mask.copy()
     top[y + cut_at:] = 0

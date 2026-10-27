@@ -3,6 +3,7 @@
   assets/dragons/<id>/skills/icons.png  2x2 grid: passive, basic, skill, ultimate (framed cards on black)
   assets/dragons/<id>/skills/vfx.png    4x2 grid of glowing effects on pure black
   assets/dragons/<id>/skills/vfx2.png   optional second 4x2 sheet -> vfx_9 .. vfx_16
+  assets/dragons/<id>/skills/basic.png  optional basic attack sheet: 4 falling projectiles / 4 impact frames -> vfx_17 .. vfx_24
 
 Writes frontend/public/dragons/<id>/skills/:
   icon_passive.png ... icon_ultimate.png   black outside the card frame made transparent
@@ -19,8 +20,6 @@ import cv2
 import numpy as np
 from PIL import Image
 
-ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
-sys.path.insert(0, str(ROOT))
 
 from lib.paths import DRAGONS, OUT
 ICON_ORDER = ["passive", "basic", "skill", "ultimate"]
@@ -71,7 +70,7 @@ def icon(cell, tol=26):
     return out.resize((ICON_WIDTH, round(out.height * ICON_WIDTH / out.width)), Image.LANCZOS)
 
 
-ICON_FROM_VFX = {"ki_lan": (7, 4, 1, 3)}   # effect number shown on each placeholder icon
+ICON_FROM_VFX = {"qilin": (7, 4, 1, 3)}   # effect number shown on each placeholder icon
 FRAME = {"passive": (190, 196, 206), "basic": (176, 112, 60), "skill": (90, 140, 200), "ultimate": (232, 184, 70)}
 
 
@@ -125,6 +124,9 @@ def main(ids):
         if (src / "vfx2.png").exists():   # optional second sheet (more skills) -> vfx_9 .. vfx_16
             for k, cell in enumerate(grid(Image.open(src / "vfx2.png"), 4, 2), 9):
                 vfx(cell).save(dst / f"vfx_{k}.png", optimize=True)
+        if (src / "basic.png").exists():   # basic attack: 4 falling projectiles / 4 impact frames -> vfx_17 .. vfx_24
+            for k, cell in enumerate(grid(Image.open(src / "basic.png"), 4, 2), 17):
+                vfx(cell).save(dst / f"vfx_{k}.png", optimize=True)
         if (src / "icons.png").exists():
             for name, cell in zip(ICON_ORDER, icon_cells(Image.open(src / "icons.png"))):
                 icon(cell).save(dst / f"icon_{name}.png", optimize=True)
@@ -135,7 +137,7 @@ def main(ids):
         if jaws.exists():
             for name, cell in zip(("jaw_upper", "jaw_lower"), grid(Image.open(jaws), 2, 1)):
                 vfx(cell).save(dst / f"{name}.png", optimize=True)
-        print(f"{dragon_id}: 4 icons + 8 vfx{' + jaws' if jaws.exists() else ''} -> {dst.relative_to(ROOT)}")
+        print(f"{dragon_id}: 4 icons + 8 vfx{' + jaws' if jaws.exists() else ''} -> {dst}")
 
 
 if __name__ == "__main__":

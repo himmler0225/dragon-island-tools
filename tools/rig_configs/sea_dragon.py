@@ -1,47 +1,65 @@
-"""Hải Long: wingless serpentine Eastern dragon."""
+"""The Long Vương family (redesign 2026-10-26): wingless serpentine Eastern dragons on a cloud.
+Việt Hải Long Vương (sea_dragon) and its four recoloured kin (east/west/north/south_sea_dragon) share
+this layout; each passes its own fit (where its pieces sit), see the variant files."""
 from lib.paths import DRAGONS
 
-# body.png (redrawn 2026-10-15): head, jaw, front body, rear body, then three tail slices of one
-# continuous tube, the last with the peacock fan. Pieces were pulled ~40 px apart along the body
-# line; each is shifted back by ~35 px per step to close the gaps.
-# The front and rear body pieces never joined cleanly (both ends were drawn as rounded caps, leaving a
-# notch in the back), so the middle body was redrawn as ONE piece: parts/body_mid.png (2026-10-15).
-# It is the torso; the tail starts straight at tail_mid and the hind legs hang from the torso.
+# parts/body.png: the head (no lower jaw, no neck), the lower jaw, and the whole body from the neck to
+# the tail tip in ONE piece (no legs, no separate tail: the tail moves with the body).
+# parts/legs.png: 4 columns (near fore, near hind, far fore, far hind) x thigh / shin / paw (pieces drawn
+# touching are split at their narrowest row).
+# ref.png: the whole dragon; layout px = ref.png px. A fit: the head matched onto ref.png, the body set
+# under the back of the head and sized against it (as long as 2.3 head widths), the legs sized by their
+# paws, legs and ground placed relative to the body. Then evened out against sea_dragon (head widths):
+# the same fore and hind leg lengths (leg_scale, hind_scale) and the same clearance under the chest (ground).
 
-CONFIG = dict(
-    name="Hải Long",
-    size=1.2,   # on-screen size vs the others (its pieces overlap a lot, so area alone makes it too small)
-    body_src=DRAGONS / "hai_long" / "parts" / "body.png",
-    legs_src=DRAGONS / "hai_long" / "parts" / "legs.png",
-    far_shade=0.8, wing_far_shade=0.66,
-    # knee 75 / ankle 50 px of overlap: with the longer stride the joints bend far enough to open gaps
-    leg_scale=0.58, leg_pull=(95, 65), ground=960,
-    body={
-        "tail_fan":  dict(src=(1408, 504), at=(1110, 263)),
-        "tail_tip":  dict(src=(1224, 723), at=(1000, 648)),
-        "tail_mid":  dict(src=(1045, 719), at=(834, 622)),
-        # whole middle body (chest, arched back, hips) from its own image, scaled to the sheet
-        "torso":     dict(src_img=DRAGONS / "hai_long" / "parts" / "body_mid.png", img_scale=0.45, at=(330, 440)),
-        "jaw":       dict(src=(134, 648), at=(178, 408)),    # lower jaw + beard, right under the snout
-        # the head piece has a lower jaw drawn on it (hanging open with the beard): cut away, the
-        # separate jaw piece (which opens when it spits) takes its place - no second jaw
-        "head":      dict(src=(247, 420), at=(107, 99), drop_poly=[[(80, 478), (172, 478), (180, 498), (246, 512), (246, 548), (176, 548), (150, 600), (80, 600)]]),   # neck set into the chest of body_mid
-    },
-    joints={
-        "torso": (493, 633),
-        "head": (380, 660),        # base of the neck, tucked into the chest
-        "jaw": (270, 422),         # hinge at the back of the jaw
-        "tail_mid": (834, 744),
-        "tail_tip": (1000, 775),
-        "tail_fan": (1110, 705),
-    },
-    # the head piece carries the long neck down over the chest: the near front leg is drawn in front of it
-    front=("fore_near_upper", "fore_near_lower", "fore_near_paw"),
-    parents={"jaw": "head", "tail_mid": "torso"},
-    # flies standing on a cloud (assets/dragons/hai_long/cloud.png, tools/slice_cloud.py) instead of wings
-    motion={"sleepTail": [0.08, 0.1, 0.15], "rideCloud": True, "tailWave": [0, 0.45, 0.5, 0.55],
-            "stride": 80},   # shorter steps: long strides bent its knees far enough to open them
-    # front legs 15% taller: their tops reach up into the chest (feet stay on the ground)
-    legs={"fore_near": dict(col=0, x=350, scale=1.35), "hind_near": dict(col=1, x=705),
-          "fore_far": dict(col=2, x=410, scale=1.35), "hind_far": dict(col=3, x=765)},
-)
+
+def layout(dragon_id: str, name: str, fit: dict, key: str | None = None) -> dict:
+    body = DRAGONS / dragon_id / "parts" / "body.png"
+    # src: a point inside the piece on body.png; at: its top-left on ref.png
+    piece = lambda n: dict(src_img=body, src=fit[n]["src"], img_scale=fit[n]["img_scale"], at=fit[n]["at"])
+    legs = fit["legs"]
+    hind = fit.get("hind_scale", 1.0)   # hind legs drawn shorter/longer than the fore ones on some sheets
+    # a hind shin drawn in one piece with the paw: cut it at the ankle (low on the piece), not mid-shin
+    split = {"split_band": fit["hind_split"]} if "hind_split" in fit else {}
+    return dict(
+        name=name,
+        size=1.2,   # on-screen size vs the others (a long thin body: area alone makes it too small)
+        **({"key": key} if key else {}),
+        body_src=body,
+        legs_src=DRAGONS / dragon_id / "parts" / "legs.png",
+        far_shade=0.8, wing_far_shade=0.8,
+        # big overlaps at knee and ankle keep the legs short and sturdy
+        # pieces meet end to end (small overlap): the legs keep their drawn length and fold into a V instead
+        leg_scale=fit["leg_scale"], leg_pull=(40, 25), ground=fit["ground"],
+        # crouched like ref.png: the body sinks and the knees bend; legs set high up the body (raise),
+        # fore paws a step forward, hind paws a step back
+        # hips pulled down by the extra length (raise < 0) so they sit where they did: the knees bend into a V
+        crouch={"drop": 50, "reach": {"fore": 70, "hind": 35}, "raise": {"fore": -35, "hind": -30}},
+        # no faded joint edges: bent hard while walking, the faded rims showed as gaps (the caps cover the joints)
+        joint_fade=0,
+        body={"torso": piece("torso"), "head": piece("head"), "jaw": piece("jaw")},   # jaw: lower jaw + beard
+        joints={
+            "torso": fit["joints"]["torso"],
+            "head": fit["joints"]["head"],   # back of the head, sitting on the end of the neck
+            "jaw": fit["joints"]["jaw"],     # the hinge at the back of the jaw, under the cheek
+        },
+        parents={"jaw": "head"},
+        # flies standing on a cloud (assets/dragons/sea_dragon/cloud.png, tools/slice_cloud.py) instead of wings
+        # short, low steps: long or high ones fold the crouched legs shut
+        # stance: far paws a step AHEAD of the near ones (rig px; the default puts them behind, right where
+        # the near legs hide them) so all four legs show, standing and on the cloud
+        motion={"sleepTail": [0, 0, 0], "rideCloud": True, "stride": 55, "liftScale": 0.45, "stance": [-45, -45]},
+        # front legs under the chest, hind legs under the hips
+        legs={"fore_near": dict(col=0, x=legs["fore_near"]), "hind_near": dict(col=1, x=legs["hind_near"], scale=hind, **split),
+              "fore_far": dict(col=2, x=legs["fore_far"]), "hind_far": dict(col=3, x=legs["hind_far"], scale=hind, **split)},
+    )
+
+
+CONFIG = layout("sea_dragon", "Việt Hải Long Vương", dict(
+    torso=dict(src=(1007, 540), img_scale=1.25, at=(476, 191)),
+    head=dict(src=(288, 340), img_scale=1.0, at=(186, 17)),
+    jaw=dict(src=(229, 695), img_scale=1.0, at=(292, 388)),
+    joints=dict(torso=(860, 600), head=(545, 445), jaw=(495, 412)),
+    legs=dict(fore_near=556, fore_far=511, hind_near=1166, hind_far=1121),
+    leg_scale=0.626, hind_scale=0.929, ground=1067,
+))

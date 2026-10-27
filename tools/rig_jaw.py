@@ -46,10 +46,10 @@ def pieces(sheet_path):
 # head: under the tip of the upper jaw/beak, and the corner of the mouth; jaw: its front tip and the
 # centre of its hinge; mouth: the front tip of its top edge (the roof) and its back corner
 POINTS = {
-    "hac_long": dict(head=((44, 469), (272, 413)), jaw=((5, 97), (288, 25)), mouth=((13, 50), (303, 15))),
-    "than_long": dict(head=((25, 612), (362, 532)), jaw=((4, 195), (361, 42)), mouth=((56, 18), (396, 48))),
-    "phuong_hoang_lua": dict(head=((60, 430), (250, 395)), jaw=((3, 85), (293, 20)), mouth=((48, 45), (353, 68))),
-    "phuong_hoang_bang": dict(head=((60, 428), (250, 390)), jaw=((6, 85), (293, 30)), mouth=((38, 52), (378, 75))),
+    "black_dragon": dict(head=((44, 469), (272, 413)), jaw=((5, 97), (288, 25)), mouth=((13, 50), (303, 15))),
+    "celestial_dragon": dict(head=((25, 612), (362, 532)), jaw=((4, 195), (361, 42)), mouth=((56, 18), (396, 48))),
+    "fire_phoenix": dict(head=((60, 430), (250, 395)), jaw=((3, 85), (293, 20)), mouth=((48, 45), (353, 68))),
+    "ice_phoenix": dict(head=((60, 428), (250, 390)), jaw=((6, 85), (293, 30)), mouth=((38, 52), (378, 75))),
 }
 
 

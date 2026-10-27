@@ -20,7 +20,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from lib.paths import ROOT
+from lib.paths import ROOT, PUBLIC
 from lib import key_magenta
 
 HAC_LONG = ROOT / "assets" / "dragons" / "hac_long"
@@ -37,8 +37,8 @@ WALK_ANCHOR = (190, 471)
 STAND_FROM = {"fore": 8, "hind": 2, "cut": 190, "feather": 16}
 FLY_SRC = HAC_LONG / "animations" / "fly_v1.png"     # flight loop drawn from template_fly_4x2.png
 GRID_CELL = (384, 512)
-UI_OUT = ROOT / "frontend" / "public" / "ui"
-OUT = ROOT / "frontend" / "public" / "sprites"
+UI_OUT = PUBLIC / "ui"
+OUT = PUBLIC / "sprites"
 
 ALPHA_SOLID = 100   # used to find frame gaps in rows 1-3
 ALPHA_HAZE = 8      # pixels at/below this are dropped (faint halo left by background removal)
@@ -354,7 +354,7 @@ def main():
               + (f"  match={base:.3f}" if "match" in opts else ""))
 
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2))
-    print(f"sprites  {len(manifest)} animations -> {OUT.relative_to(ROOT)}")
+    print(f"sprites  {len(manifest)} animations -> {OUT}")
 
 
 if __name__ == "__main__":

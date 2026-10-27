@@ -12,11 +12,11 @@ tools/
 │   └── __init__.py    re-exports for backwards compatibility
 ├── rig_configs/       one file per dragon species
 │   ├── __init__.py    CONFIGS dict + LEG_SIDES (all species)
-│   ├── hac_long.py
-│   ├── rong_xuong.py
-│   ├── tuan_long.py
-│   ├── hai_long.py
-│   └── ki_lan.py
+│   ├── black_dragon.py
+│   ├── bone_dragon.py
+│   ├── stag_dragon.py
+│   ├── sea_dragon.py
+│   └── qilin.py
 ├── legacy/            one-off or experimental scripts kept for reference
 │   ├── slice_sheet.py
 │   └── gait_design.py
@@ -31,9 +31,9 @@ tools/
 ## Quick reference
 
 ```bash
-# All scripts run via the project venv from the repo root:
+# All scripts run via this repo's venv from the repo root (output: ../dragon-island/frontend/public, or $DRAGON_ISLAND_PUBLIC):
 .venv/bin/python tools/build_rig.py            # all dragons
-.venv/bin/python tools/build_rig.py hac_long   # one dragon
+.venv/bin/python tools/build_rig.py black_dragon   # one dragon
 .venv/bin/python tools/slice_skills.py          # all dragons with skills/
 .venv/bin/python tools/slice_cloud.py           # all dragons with cloud.png
 .venv/bin/python tools/slice_world.py
@@ -41,7 +41,7 @@ tools/
 .venv/bin/python tools/slice_ui.py
 
 # After any run, verify public/ is clean:
-git status --porcelain frontend/public
+git -C ../dragon-island status --porcelain frontend/public
 ```
 
 ## Shared library

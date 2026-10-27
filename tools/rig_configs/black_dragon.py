@@ -8,7 +8,7 @@ def layout(dragon_id: str, name: str, wing_root=(330, 800)) -> dict:
     name=name,
     body_src=DRAGONS / dragon_id / "parts" / "body.png",
     legs_src=DRAGONS / dragon_id / "parts" / "legs.png",
-    far_shade=0.78, wing_far_shade=0.72,
+    far_shade=0.78, wing_far_shade=0.84,
     leg_scale=0.42, leg_pull=(65, 50), ground=960,
     replace={"head": DRAGONS / dragon_id / "parts" / "head.png"},
     motion={"wingSpread": [0.22, -0.05], "flyLegs": "dangle", "flyPitch": 0.2},
@@ -36,4 +36,4 @@ def layout(dragon_id: str, name: str, wing_root=(330, 800)) -> dict:
           "fore_far": dict(col=2, x=390), "hind_far": dict(col=3, x=640)},
 )
 
-CONFIG = layout("hac_long", "Hắc Long")
+CONFIG = layout("black_dragon", "Hắc Long")

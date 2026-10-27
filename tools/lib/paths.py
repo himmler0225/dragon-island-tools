@@ -1,4 +1,5 @@
 """Shared path constants for the tools package."""
+import os
 from pathlib import Path
 
 # Resolve from this file's location: tools/lib/paths.py -> tools/ -> repo root
@@ -10,7 +11,9 @@ if _ROOT.name == "tools":
 ROOT = _ROOT
 
 ASSETS = ROOT / "assets"
-PUBLIC = ROOT / "frontend" / "public"
+# Output goes into the game repo's frontend/public. Default: sibling checkout
+# ../dragon-island; override with DRAGON_ISLAND_PUBLIC.
+PUBLIC = Path(os.environ.get("DRAGON_ISLAND_PUBLIC") or ROOT.parent / "dragon-island" / "frontend" / "public").resolve()
 DRAGONS = ASSETS / "dragons"
 OUT = PUBLIC / "dragons"
 UI_OUT = PUBLIC / "ui"

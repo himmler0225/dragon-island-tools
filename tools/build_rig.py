@@ -15,6 +15,7 @@ faces left. Exported images are at EXPORT_SCALE of rig space so they stay sharp 
 draws the rig at half size.
 
 Usage: .venv/bin/python tools/build_rig.py [dragon_id ...] [--debug out_dir]   (default: all dragons)
+       .venv/bin/python tools/build_rig.py [dragon_id ...] --portrait   (only redraw portrait.png)
 """
 import json
 import sys
@@ -24,27 +25,25 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
-sys.path.insert(0, str(ROOT))
-
 from lib.image import key_distance, key_magenta, components, cut, shade
 from lib.paths import ROOT
 from lib.rig_ops import align_replacement, feather, rotate_about, split_tallest, solid_x, turn_point, rotate_about as _ra2, turn_point as _tp2
 from rig_configs import CONFIGS, LEG_SIDES
 from rig_jaw import POINTS as JAW_POINTS, add_jaw
-from lib.paths import DRAGONS
+from lib.paths import DRAGONS, OUT as OUT_ROOT
 
 SEGMENTS = ("upper", "lower", "paw")
 
-OUT_ROOT = ROOT / "frontend" / "public" / "dragons"
 OUT = None   # set per dragon in main()
 
 # Draw order, back to front (bones a species does not have are skipped).
-ORDER = ["wing_far", "fore_far_upper", "fore_far_lower", "fore_far_paw", "hind_far_upper",
+# fan_1..15: a peacock's tail feathers (back layer first), behind everything; they fan open
+FANS = [f"fan_{k}" for k in range(1, 16)]
+ORDER = [*FANS, "wing_far", "fore_far_upper", "fore_far_lower", "fore_far_paw", "hind_far_upper",
          "hind_far_lower", "hind_far_paw", "tail_fan", "tail_tip", "tail_mid", "tail_base", "torso",
          "hind_near_upper", "hind_near_lower", "hind_near_paw", "fore_near_upper", "fore_near_lower",
          "fore_near_paw", "jaw", "head", "wing_near"]
-BODY_PARENT = {"head": "torso", "wing_near": "torso", "wing_far": "torso", "tail_base": "torso", "tail_fan": "tail_tip",
+BODY_PARENT = {**{f: "torso" for f in FANS}, "head": "torso", "wing_near": "torso", "wing_far": "torso", "tail_base": "torso", "tail_fan": "tail_tip",
                "tail_mid": "tail_base", "tail_tip": "tail_mid"}
 
 # Joint caps: a disc cut from the assembled rest pose around a joint, drawn behind the two pieces
@@ -64,6 +63,8 @@ TARGET_BODY = 290
 
 def build(cfg):
     key = key_distance if cfg.get("key") == "distance" else key_magenta
+    if cfg.get("key") == "tight":   # pink art: only near-exact magenta is background
+        key = lambda im: key_distance(im, 14, 45)
     body_img = key(Image.open(cfg["body_src"]))
     legs_img = key(Image.open(cfg["legs_src"]))
     if "legs_crop" in cfg:   # the legs sheet also holds other pieces: keep only the leg area
@@ -80,7 +81,7 @@ def build(cfg):
         if name in cfg.get("skip", ()):
             continue
         if "src_img" in spec:   # piece drawn on its own image (a redrawn part): largest island, resized
-            own = key_magenta(Image.open(spec["src_img"]))
+            own = key(Image.open(spec["src_img"]))   # same keying as the sheets (cfg["key"])
             parts_own = components(own)
             if "src" in spec:   # several pieces on that image: the one nearest src
                 sx, sy = spec["src"]
@@ -251,7 +252,7 @@ def build(cfg):
                 stubs.append(((bx + bw // 2, yy, 2, 2), sm))
             col = col + stubs
         while 0 < len(col) < 3:   # pieces drawn touching: split the tallest at its narrowest row
-            col = split_tallest(col, cfg.get("leg_split", "tallest"))
+            col = split_tallest(col, cfg.get("leg_split", "tallest"), spec.get("split_band", (0.3, 0.75)))
         assert len(col) == 3, f"{leg}: expected 3 pieces, got {len(col)}"
         left = min(c[0][0] for c in col)
         cuts = [cut(src_img, b, m) for b, m in col]
@@ -319,7 +320,72 @@ def build(cfg):
             lo["joint"] = solid_centre(lo, 14)                       # knee / elbow: top of the lower piece
             paw["joint"] = solid_centre(paw, 14)                     # ankle / wrist: top of the paw
         paw["toe"] = (paw["box_at"][0], GROUND)     # front of the paw on the ground (for the IK target)
+    if "crouch" in cfg:
+        crouch(pieces, cfg)
     return pieces
+
+
+def _turn(piece, centre, deg):
+    """rotate_about for a piece whose image is at `scale` layout px per image px."""
+    s = piece["scale"]
+    img, at = piece["img"], piece["at"]
+    pad = int(np.hypot(*img.size)) // 2 + 4
+    big = Image.new("RGBA", (img.width + 2 * pad, img.height + 2 * pad))
+    big.paste(img, (pad, pad))
+    c = ((centre[0] - at[0]) / s + pad, (centre[1] - at[1]) / s + pad)
+    big = big.rotate(-deg, center=c, resample=Image.BICUBIC)   # PIL turns counter-clockwise
+    box = big.getchannel("A").getbbox()
+    piece["img"] = big.crop(box)
+    piece["at"] = (at[0] + (box[0] - pad) * s, at[1] + (box[1] - pad) * s)
+
+
+def _shift(piece, dx, dy):
+    piece["at"] = (piece["at"][0] + dx, piece["at"][1] + dy)
+    for key in ("joint", "box_at", "toe"):
+        if key in piece:
+            piece[key] = (piece[key][0] + dx, piece[key][1] + dy)
+
+
+def crouch(pieces, cfg):
+    """Rest pose with bent legs (cfg["crouch"]): the whole body sinks `drop` layout px while every paw
+    stays on the ground (pushed `reach` px: fore paws forward, hind paws back); each leg's thigh and
+    shin turn to meet it (two-bone IK; the knee bends the way the game bends it: a front leg's elbow
+    points back, a hind leg's knee forward, unless motion.hindKnee is "back"). `raise` sets a leg kind's
+    hip higher up the body (its paw still on the ground). Baked into the
+    images, so the dragon also stands like this where the game does not solve the legs (on its cloud)."""
+    spec = cfg["crouch"]
+    drop, reach, lift = spec["drop"], spec.get("reach", {}), spec.get("raise", {})
+    legs = [n.removesuffix("_upper") for n in pieces if n.endswith("_upper")]
+    for name, p in pieces.items():
+        if not any(name.startswith(leg) for leg in legs):
+            _shift(p, 0, drop)   # body, head, jaw: down
+    d = lambda a, b: np.arctan2(b[1] - a[1], b[0] - a[0])
+    for leg in legs:
+        up, lo, paw = (pieces[f"{leg}_{seg}"] for seg in SEGMENTS)
+        _shift(up, 0, drop - lift.get(leg.split("_")[0], 0))   # the hip goes down with the body
+        S, K, P = (np.array(x["joint"], float) for x in (up, lo, paw))
+        K = K + (0, drop - lift.get(leg.split("_")[0], 0))   # the knee if the leg just moved with the hip
+        dx = reach.get(leg.split("_")[0], 0) * (-1 if leg.startswith("fore") else 1)
+        T = P + (dx, 0)                        # paw: stays on the ground
+        l1 = np.linalg.norm(K - S)                                     # thigh
+        l2 = np.linalg.norm(np.array(paw["joint"]) - np.array(lo["joint"]))   # shin
+        v = T - S
+        dist = min(np.linalg.norm(v), l1 + l2 - 0.5)
+        base = np.arctan2(v[1], v[0])
+        off = np.arccos(np.clip((l1 ** 2 + dist ** 2 - l2 ** 2) / (2 * l1 * dist), -1, 1))
+        back = leg.startswith("fore") or cfg.get("motion", {}).get("hindKnee") == "back"
+        K2 = max((S + l1 * np.array([np.cos(a), np.sin(a)]) for a in (base + off, base - off)),
+                 key=lambda k: k[0] if back else -k[0])
+        T = S + v / np.linalg.norm(v) * dist
+        a_up = np.degrees(d(S, K2) - d(S, K))
+        a_lo = np.degrees(d(K2, T) - d(np.array(lo["joint"]), np.array(paw["joint"])))
+        _turn(up, tuple(S), a_up)
+        _shift(lo, *(K2 - np.array(lo["joint"])))
+        _turn(lo, tuple(K2), a_lo)
+        lo["joint"] = tuple(K2)
+        _shift(paw, *(T - np.array(paw["joint"])))
+        paw["joint"] = tuple(T)
+        paw["toe"] = (paw["toe"][0], cfg["ground"])
 
 
 def compose(rig, names, pad=40):
@@ -407,11 +473,79 @@ def split_crest(rig, spec):
     rig["bones"].insert(rig["bones"].index(head), entry)   # behind the head
 
 
+def far_leg_poses(rig):
+    """{bone: (rotation rad, new joint)} for the far legs in the game's idle stance (pose.ts): the paw
+    is pushed by `stance` / `armPose` and the leg follows with the same two-bone IK as ik.ts, so the
+    far leg no longer hides exactly behind the near one."""
+    bones = {b["name"]: b for b in rig["bones"]}
+    motion = rig.get("motion", {})
+    stance = motion.get("stance", [48, 40])
+    poses = {}
+    for i, kind in enumerate(("fore", "hind")):
+        leg = f"{kind}_far"
+        if not all(f"{leg}_{seg}" in bones for seg in SEGMENTS):
+            continue
+        if kind == "fore" and motion.get("foreArms"):   # arms hang at armPose instead of standing
+            dx, dy = motion.get("armPose", [[0, 0], [0, 0]])[1]
+        else:
+            dx, dy = stance[i], 0
+        if not (dx or dy):
+            continue
+        S, K, P = (np.array(bones[f"{leg}_{seg}"]["joint"], float) for seg in SEGMENTS)
+        l1, l2 = np.linalg.norm(K - S), np.linalg.norm(P - K)
+        v = P + (dx, dy) - S
+        d = min(np.linalg.norm(v), l1 + l2 - 0.01)   # out of reach: stretch towards it
+        v = v / np.linalg.norm(v) * d
+        base = np.arctan2(v[1], v[0])
+        off = np.arccos(np.clip((l1 ** 2 + d * d - l2 ** 2) / (2 * l1 * d), -1, 1))
+        # bend the knee the way the art draws it: the solution nearest the rest knee
+        K2 = min((S + l1 * np.array([np.cos(a), np.sin(a)]) for a in (base + off, base - off)),
+                 key=lambda k: np.linalg.norm(k - K))
+        T = S + v
+        dir_ = lambda a, b: np.arctan2(b[1] - a[1], b[0] - a[0])
+        r1, r2 = dir_(S, K2) - dir_(S, K), dir_(K2, T) - dir_(K, P)
+        poses[f"{leg}_upper"] = (r1, S)
+        poses[f"{leg}_lower"] = (r2, K2)
+        poses[f"{leg}_paw"] = (0.0, T)   # the paw stays level, as in the idle pose
+    # joint caps sit on the child joint, turned halfway between their two pieces (pose.ts)
+    for b in rig["bones"]:
+        if "cap" in b and any(n in poses for n in b["cap"]):
+            (ra, _), (rb, pos) = (poses.get(n, (0.0, np.array(bones[n]["joint"], float))) for n in b["cap"])
+            poses[b["name"]] = ((ra + rb) / 2, pos)
+    return poses
+
+
 def portrait(rig):
-    """The assembled rest pose as one image (dragon info panel)."""
+    """The assembled idle pose as one image (dragon info panel)."""
     # (the mouth interior is drawn open: it only shows when the jaw opens)
-    img, _ = compose(rig, [b["name"] for b in rig["bones"] if b["name"] != "mouth"], pad=6)
-    img.crop(img.getchannel("A").getbbox()).save(OUT / "portrait.png", optimize=True)
+    names = [b["name"] for b in rig["bones"] if b["name"] != "mouth"]
+    bones = {b["name"]: b for b in rig["bones"]}
+    poses = far_leg_poses(rig)
+    placed = []
+    for n in names:
+        img = Image.open(OUT / f"{n}.png").convert("RGBA")
+        b = bones[n]
+        placed.append((n, img, b["joint"][0] - b["origin"][0] * img.width, b["joint"][1] - b["origin"][1] * img.height))
+    # generous margin: a posed leg can swing past the rest-pose bounds (cropped away below)
+    pad = 6 + (150 if poses else 0)
+    x0 = min(x for _, _, x, _ in placed) - pad
+    y0 = min(y for _, _, _, y in placed) - pad
+    x1 = max(x + i.width for _, i, x, _ in placed) + pad
+    y1 = max(y + i.height for _, i, _, y in placed) + pad
+    size = (int(x1 - x0) + 1, int(y1 - y0) + 1)
+    canvas = Image.new("RGBA", size)
+    for n, img, x, y in placed:
+        if n not in poses:
+            canvas.alpha_composite(img, (round(x - x0), round(y - y0)))
+            continue
+        rot, (nx, ny) = poses[n]
+        jx, jy = bones[n]["joint"]
+        layer = Image.new("RGBA", size)
+        layer.alpha_composite(img, (round(x - x0), round(y - y0)))
+        # rig rotations turn clockwise on screen (y down); PIL turns counter-clockwise
+        canvas.alpha_composite(layer.rotate(-np.degrees(rot), Image.BICUBIC, center=(jx - x0, jy - y0),
+                                            translate=(nx - jx, ny - jy)))
+    canvas.crop(canvas.getchannel("A").getbbox()).save(OUT / "portrait.png", optimize=True)
 
 
 def export(cfg, pieces, debug=None):
@@ -419,10 +553,13 @@ def export(cfg, pieces, debug=None):
     # rig space: origin on the ground under the torso joint, scaled to TARGET_HEIGHT
     top = min(p["at"][1] for p in pieces.values())
     body = sum(float((np.asarray(p["img"])[..., 3] > 128).sum()) * p["scale"] ** 2
-               for n, p in pieces.items() if not n.startswith(("wing", "crest")))
+               for n, p in pieces.items() if not n.startswith(("wing", "crest", "fan")))
     k = TARGET_BODY / body ** 0.5 * cfg.get("size", 1.0)
     ox = pieces["torso"]["joint"][0]
     order = [n for n in ORDER if n in pieces]
+    for name in reversed(cfg.get("behind", ())):   # bones drawn behind everything (e.g. a bird's legs under its body)
+        if name in order:
+            order.remove(name); order.insert(0, name)
     for name in cfg.get("front", ()):   # bones drawn on top of everything else (e.g. a leg over a long neck)
         if name in order:
             order.remove(name); order.append(name)
@@ -451,7 +588,7 @@ def export(cfg, pieces, debug=None):
     add_caps(rig, rigid)
     (OUT / "rig.json").write_text(json.dumps(rig, indent=1))
     portrait(rig)
-    print(f"wrote {len(order)} pieces + rig.json to {OUT.relative_to(ROOT)}  (scale {k:.3f})")
+    print(f"wrote {len(order)} pieces + rig.json to {OUT}  (scale {k:.3f})")
 
     if debug:
         W = int((max(p["at"][0] + p["img"].width * p["scale"] for p in pieces.values()) - min(p["at"][0] for p in pieces.values())) * k) + 80
@@ -478,6 +615,12 @@ if __name__ == "__main__":
     dbg = None
     if "--debug" in args:
         i = args.index("--debug"); dbg = Path(args[i + 1]); del args[i:i + 2]
+    only_portrait = "--portrait" in args
+    if only_portrait:
+        args.remove("--portrait")
     for dragon_id in args or list(CONFIGS):
         OUT = OUT_ROOT / dragon_id
+        if only_portrait:   # redraw portrait.png from the exported pieces + rig.json, nothing else
+            portrait(json.loads((OUT / "rig.json").read_text()))
+            continue
         export(CONFIGS[dragon_id], build(CONFIGS[dragon_id]), dbg / f"{dragon_id}.png" if dbg else None)

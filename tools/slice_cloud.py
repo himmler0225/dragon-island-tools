@@ -11,8 +11,6 @@ from pathlib import Path
 
 from PIL import Image
 
-ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
-sys.path.insert(0, str(ROOT))
 
 from lib.image import key_magenta
 from lib.paths import DRAGONS, OUT
@@ -32,7 +30,7 @@ def main(ids):
             piece, _ = cut(img, bbox, mask)
             piece.thumbnail((320, 320), Image.LANCZOS)
             piece.save(dst / f"cloud_{k}.png", optimize=True)
-        print(f"{dragon_id}: cloud_main {main_cloud.size} + {len(puffs)} puffs  -> {OUT.relative_to(ROOT)}")
+        print(f"{dragon_id}: cloud_main {main_cloud.size} + {len(puffs)} puffs  -> {OUT}")
 
 
 if __name__ == "__main__":

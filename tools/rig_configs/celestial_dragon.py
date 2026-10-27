@@ -2,4 +2,4 @@
 from .black_dragon import layout
 
 # wing_far.png was redrawn a little smaller: its root swirl sits at a different source px
-CONFIG = layout("than_long", "Thần Long", wing_root=(335, 742))
+CONFIG = layout("celestial_dragon", "Thần Long", wing_root=(335, 742))

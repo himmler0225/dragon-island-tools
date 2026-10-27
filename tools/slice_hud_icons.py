@@ -13,12 +13,10 @@ import numpy as np
 from PIL import Image
 
 # repo root: tools/ → repo root; use sys.argv[0] for reliable resolution in all environments
-ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
-sys.path.insert(0, str(ROOT))
 
-from lib.paths import UI_OUT
+from lib.paths import ASSETS, UI_OUT
 
-ICONS_SRC = ROOT / "assets" / "ui" / "hud_icons.png"
+ICONS_SRC = ASSETS / "ui" / "hud_icons.png"
 ICON_NAMES = [
     "bag", "shop", "gift", "battle",
     "achievement", "quest", "profile", "potion",
@@ -64,7 +62,7 @@ def main():
             square.resize((ICON_SIZE, ICON_SIZE), Image.LANCZOS).save(
                 UI_OUT / f"{ICON_NAMES[r * 4 + c]}.png", optimize=True
             )
-    print(f"icons  {len(ICON_NAMES)} -> {UI_OUT.relative_to(ROOT)}")
+    print(f"icons  {len(ICON_NAMES)} -> {UI_OUT}")
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ fades out over the next across a wide 80 px band (fade), and since they come fro
 """
 from lib.paths import DRAGONS
 
-SHEET = DRAGONS / "tu_xa_long" / "parts" / "body.png"
+SHEET = DRAGONS / "void_serpent" / "parts" / "body.png"
 LONG = (420, 255)   # where the long body piece goes: its sheet top-left (400, 155) moved to join the coil
 
 CONFIG = dict(

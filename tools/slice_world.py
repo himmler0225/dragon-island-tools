@@ -18,8 +18,6 @@ import cv2
 import numpy as np
 from PIL import Image
 
-ROOT = Path("/Users/mypc/cinemark-workspace/dragon-island")
-sys.path.insert(0, str(ROOT))
 
 from lib.image import key_magenta
 from lib.paths import ASSETS, PUBLIC

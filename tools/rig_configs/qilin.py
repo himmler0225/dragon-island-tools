@@ -8,8 +8,8 @@ from lib.paths import DRAGONS
 CONFIG = dict(
     name="Kì Lân",
     size=1.2,   # on-screen size vs the others (body and tail are carved from one overlapping piece: area alone makes it too small)
-    body_src=DRAGONS / "ki_lan" / "parts" / "body.png",
-    legs_src=DRAGONS / "ki_lan" / "parts" / "legs.png",
+    body_src=DRAGONS / "qilin" / "parts" / "body.png",
+    legs_src=DRAGONS / "qilin" / "parts" / "legs.png",
     far_shade=0.8, wing_far_shade=0.8,
     key="distance",            # purple mane: magenta-ness keying would eat it
     # knee 78 / ankle 45 px overlap: the thigh ends round, and with the long stride the knee bends far

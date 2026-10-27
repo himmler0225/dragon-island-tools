@@ -9,14 +9,14 @@ Older sheets: parts/body_old*.png, body_v2/v3.png, legs_old2.png.
 """
 from lib.paths import DRAGONS
 
-P = DRAGONS / "rong_lua_do" / "parts"
+P = DRAGONS / "fire_dragon" / "parts"
 
 CONFIG = dict(
-    size=0.85,   # a bit smaller than the bigger dragons
+    size=0.7,    # clearly smaller than the bigger dragons (baby dragons)
     name="Rồng Lửa",
     body_src=P / "body.png",
     legs_src=P / "legs.png",
-    far_shade=0.8, wing_far_shade=0.85,
+    far_shade=0.8, wing_far_shade=0.92,
     leg_scale=1.0, leg_pull=0, ground=902,
     rigid_legs=True,
     body={

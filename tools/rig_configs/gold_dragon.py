@@ -6,7 +6,7 @@ def layout(dragon_id: str, name: str) -> dict:
         name=name,
         body_src=DRAGONS / dragon_id / "parts" / "body.png",
         legs_src=DRAGONS / dragon_id / "parts" / "legs.png",
-        far_shade=0.8, wing_far_shade=0.75,
+        far_shade=0.8, wing_far_shade=0.86,
         leg_scale=0.6, leg_pull=(100, 95), ground=1265,
         body={
             "wing_far":  dict(src=(1205, 361), at=(447, 296), rot=-30),
@@ -43,4 +43,4 @@ def layout(dragon_id: str, name: str) -> dict:
     )
 
 
-CONFIG = layout("rong_vang", "Rồng Vàng")
+CONFIG = layout("gold_dragon", "Rồng Vàng")
