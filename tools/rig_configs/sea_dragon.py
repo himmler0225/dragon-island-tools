@@ -1,4 +1,4 @@
-"""The Long Vương family (redesign 2026-10-26): wingless serpentine Eastern dragons on a cloud.
+"""The Long Vương family (redesign 2026-10-26): wingless serpentine Eastern dragons striding on four small clouds.
 Việt Hải Long Vương (sea_dragon) and its four recoloured kin (east/west/north/south_sea_dragon) share
 this layout; each passes its own fit (where its pieces sit), see the variant files."""
 from lib.paths import DRAGONS
@@ -30,13 +30,15 @@ def layout(dragon_id: str, name: str, fit: dict, key: str | None = None) -> dict
         far_shade=0.8, wing_far_shade=0.8,
         # big overlaps at knee and ankle keep the legs short and sturdy
         # pieces meet end to end (small overlap): the legs keep their drawn length and fold into a V instead
-        leg_scale=fit["leg_scale"], leg_pull=(40, 25), ground=fit["ground"],
+        leg_scale=fit["leg_scale"], leg_pull=(70, 55), ground=fit["ground"],
+        # thigh drawn over shin over paw, each one's bottom end melting into the top of the next: no line across a
+        # joint; no joint caps on the legs (they took in bits of both pieces and showed when a joint bent)
+        legs_down=True,
+        no_caps=tuple(f"{leg}_{seg}" for leg in ("fore_near", "fore_far", "hind_near", "hind_far") for seg in ("upper", "lower", "paw")),
         # crouched like ref.png: the body sinks and the knees bend; legs set high up the body (raise),
         # fore paws a step forward, hind paws a step back
         # hips pulled down by the extra length (raise < 0) so they sit where they did: the knees bend into a V
-        crouch={"drop": 50, "reach": {"fore": 70, "hind": 35}, "raise": {"fore": -35, "hind": -30}},
-        # no faded joint edges: bent hard while walking, the faded rims showed as gaps (the caps cover the joints)
-        joint_fade=0,
+        crouch=fit.get("crouch", {"drop": 50, "reach": {"fore": 70, "hind": 35}, "raise": {"fore": -35, "hind": -30}}),
         body={"torso": piece("torso"), "head": piece("head"), "jaw": piece("jaw")},   # jaw: lower jaw + beard
         joints={
             "torso": fit["joints"]["torso"],
@@ -44,10 +46,10 @@ def layout(dragon_id: str, name: str, fit: dict, key: str | None = None) -> dict
             "jaw": fit["joints"]["jaw"],     # the hinge at the back of the jaw, under the cheek
         },
         parents={"jaw": "head"},
-        # flies standing on a cloud (assets/dragons/sea_dragon/cloud.png, tools/slice_cloud.py) instead of wings
+        # flies striding on a small cloud under each paw (the puffs of assets/dragons/sea_dragon/cloud.png, tools/slice_cloud.py) instead of wings
         # short, low steps: long or high ones fold the crouched legs shut
         # stance: far paws a step AHEAD of the near ones (rig px; the default puts them behind, right where
-        # the near legs hide them) so all four legs show, standing and on the cloud
+        # the near legs hide them) so all four legs show, standing and in the air
         motion={"sleepTail": [0, 0, 0], "rideCloud": True, "stride": 55, "liftScale": 0.45, "stance": [-45, -45]},
         # front legs under the chest, hind legs under the hips
         legs={"fore_near": dict(col=0, x=legs["fore_near"]), "hind_near": dict(col=1, x=legs["hind_near"], scale=hind, **split),

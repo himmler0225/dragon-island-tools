@@ -13,6 +13,8 @@ CONFIG = dict(
     far_shade=0.82, wing_far_shade=0.88,
     # legs 0.95 (were 1.15 and read too big for the body); ground raised with them so the hips stay put
     leg_scale=0.95, leg_pull=(45, 30), ground=1140,   # bone knobs overlap so the knee never gapes
+    # no cap behind the ankles: the disc took in the toe bones, which showed under the foot as it tipped in a step
+    no_caps=("hind_near_paw", "hind_far_paw"),
     body={
         "wing_far":  dict(src=(548, 272), at=(353, 150)),
         "tail_tip":  dict(src=(1417, 649), at=(1190, 536)),
@@ -41,4 +43,6 @@ CONFIG = dict(
     # a biped: both hips sit together under the pelvis (far one a touch behind, for depth) so the two
     # legs scissor around the same point; set apart, they met in the middle and read as one leg stepping
     legs={"hind_near": dict(col=1, x=690), "hind_far": dict(col=2, x=715)},
+    # wings on the ground (wing_rest: in flight they beat from where they are drawn), set as one V on every winged species: the far wing raised and leaning forward, peeking out ahead of the near one, which sweeps back
+    wing_rest={"wing_far": (-40, -30, -15, 0.9), "wing_near": (0, 0, 10, 1.0)},
 )

@@ -11,14 +11,14 @@ Writes frontend/public/dragons/<id>/skills/:
                                            where black is transparent and glow adds light
   jaw_upper.png, jaw_lower.png             optional (skills/jaws.png): giant jaws for bite attacks
 
-Usage: .venv/bin/python tools/slice_skills.py [dragon_id ...]   (default: every dragon with skills/)
+Usage: .venv/bin/python tools/slice_skills.py [--vfx-only] [dragon_id ...]   (default: every dragon with skills/)
 """
 import sys
 from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 
 from lib.paths import DRAGONS, OUT
@@ -31,6 +31,26 @@ def grid(img, cols, rows):
     w, h = img.width / cols, img.height / rows
     return [img.crop((round(c * w), round(r * h), round((c + 1) * w), round((r + 1) * h)))
             for r in range(rows) for c in range(cols)]
+
+
+def fx_grid(img, cols=4, rows=2, search=130):
+    """grid(), but each column cut moves to the darkest column within `search` px of the even split:
+    an effect drawn across the line (a long fireball) stays whole instead of losing its head."""
+    lum = np.asarray(img.convert("L")).astype(int)
+    h, cw = img.height / rows, img.width / cols
+    cells = []
+    for r in range(rows):
+        band = lum[round(r * h):round((r + 1) * h)]
+        lit = (band > 25).sum(axis=0)
+        cuts = [0]
+        for c in range(1, cols):
+            x0 = round(c * cw)
+            lo, hi = max(cuts[-1] + 1, x0 - search), min(img.width - 1, x0 + search)
+            xs = np.arange(lo, hi)
+            cuts.append(int(xs[np.argmin(lit[lo:hi] * 1000 + np.abs(xs - x0))]))
+        cuts.append(img.width)
+        cells += [img.crop((cuts[c], round(r * h), cuts[c + 1], round((r + 1) * h))) for c in range(cols)]
+    return cells
 
 
 def icon_cells(img, search=80, tol=26):
@@ -70,7 +90,7 @@ def icon(cell, tol=26):
     return out.resize((ICON_WIDTH, round(out.height * ICON_WIDTH / out.width)), Image.LANCZOS)
 
 
-ICON_FROM_VFX = {"qilin": (7, 4, 1, 3)}   # effect number shown on each placeholder icon
+ICON_FROM_VFX = {"qilin": (7, 4, 1, 3), "fire_dragon": (7, 1, 3, 6), "earth_dragon": (8, 1, 3, 5), "moon_dragon": (7, 1, 3, 5), "leaf_dragon": (7, 1, 3, 5), "immortal_bird": (7, 1, 3, 5), "stone_ghost_dragon": (1, 4, 5, 7), "ruby_dragon": (5, 1, 2, 4)}   # effect number shown on each placeholder icon
 FRAME = {"passive": (190, 196, 206), "basic": (176, 112, 60), "skill": (90, 140, 200), "ultimate": (232, 184, 70)}
 
 
@@ -111,22 +131,31 @@ def vfx(cell, pad=6):
     box = (max(0, xs.min() - pad), max(0, ys.min() - pad), min(cell.width, xs.max() + pad), min(cell.height, ys.max() + pad))
     out = Image.fromarray(rgb).crop(box)
     k = min(1.0, VFX_MAX / max(out.size))
-    return out.resize((round(out.width * k), round(out.height * k)), Image.LANCZOS)
+    return crisp(out.resize((round(out.width * k), round(out.height * k)), Image.LANCZOS))
 
 
-def main(ids):
+def crisp(fx):
+    """(2026-11-23) sharpened and the glow lifted a little: on the field the effects read soft and faint."""
+    fx = fx.filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
+    return Image.fromarray(np.clip(np.asarray(fx).astype(np.float32) * 1.12, 0, 255).astype(np.uint8))
+
+
+def main(ids, vfx_only=False):
     for dragon_id in ids:
         src, dst = DRAGONS / dragon_id / "skills", OUT / dragon_id / "skills"
         dst.mkdir(parents=True, exist_ok=True)
-        effects = [vfx(cell) for cell in grid(Image.open(src / "vfx.png"), 4, 2)]
+        effects = [vfx(cell) for cell in fx_grid(Image.open(src / "vfx.png"))]
         for k, fx in enumerate(effects, 1):
             fx.save(dst / f"vfx_{k}.png", optimize=True)
         if (src / "vfx2.png").exists():   # optional second sheet (more skills) -> vfx_9 .. vfx_16
             for k, cell in enumerate(grid(Image.open(src / "vfx2.png"), 4, 2), 9):
                 vfx(cell).save(dst / f"vfx_{k}.png", optimize=True)
         if (src / "basic.png").exists():   # basic attack: 4 falling projectiles / 4 impact frames -> vfx_17 .. vfx_24
-            for k, cell in enumerate(grid(Image.open(src / "basic.png"), 4, 2), 17):
+            for k, cell in enumerate(fx_grid(Image.open(src / "basic.png")), 17):
                 vfx(cell).save(dst / f"vfx_{k}.png", optimize=True)
+        if vfx_only:   # --vfx-only: the effects only, icons and jaws left as they are
+            print(f"{dragon_id}: vfx -> {dst}")
+            continue
         if (src / "icons.png").exists():
             for name, cell in zip(ICON_ORDER, icon_cells(Image.open(src / "icons.png"))):
                 icon(cell).save(dst / f"icon_{name}.png", optimize=True)
@@ -141,4 +170,5 @@ def main(ids):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:] or sorted(p.parent.parent.name for p in DRAGONS.glob("*/skills/vfx.png")))
+    args = [a for a in sys.argv[1:] if a != "--vfx-only"]
+    main(args or sorted(p.parent.parent.name for p in DRAGONS.glob("*/skills/vfx.png")), vfx_only="--vfx-only" in sys.argv)

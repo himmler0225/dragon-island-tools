@@ -29,5 +29,5 @@ CONFIG = dict(
     },
     motion={"sleepTail": [0.1, 0.12, 0.15], "noFly": True, "rigidLegs": True, "stride": 45, "stance": [0, 0]},
     legs={"fore_near": dict(pick=(264, 409), scale=0.68, x=490), "fore_far": dict(pick=(1314, 419), scale=0.62, x=360),
-          "hind_near": dict(pick=(803, 382), scale=0.7, x=770), "hind_far": dict(pick=(1895, 398), scale=0.64, x=720)},
+          "hind_near": dict(pick=(803, 382), scale=0.7, x=770), "hind_far": dict(pick=(1895, 398), scale=0.64, x=637)},
 )

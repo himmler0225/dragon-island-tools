@@ -5,19 +5,28 @@ from lib.paths import DRAGONS
 
 # parts/body.png: head (crest + beak, no neck), body with the neck, the yellow wing, then the 5 tail
 # feathers left to right = outer (pink) to inner (blue), each drawn pointing up with its base at the bottom.
-# parts/legs.png: 4 columns, the near leg in column 2 and the far leg in column 4 (thigh / shin / foot).
+# parts/legs.png (redraw 2026-10-31): 4 columns, the near leg in column 2 and the far leg in column 4 (thigh /
+# shin / foot); one ball per joint, on top of the lower piece. Older sheet: legs_old.png.
 # ref.png: the whole peacock, tail spread; layout px = ref.png px (head and wing matched onto it).
 BODY = DRAGONS / "peacock" / "parts" / "body.png"
 RUMP = (700, 600)   # where every tail feather grows from
 
 CONFIG = dict(
     name="Khổng Tước",
+    size=0.75,   # smaller than the dragons
     key="tight",   # pink feathers: magenta / distance keying would eat them
     body_src=BODY,
+    # legs.png (redraw 2026-11-16): no joint balls; thigh / shin / foot drawn ~38 px apart, overlapped by the rig
     legs_src=DRAGONS / "peacock" / "parts" / "legs.png",
     far_shade=0.8, wing_far_shade=0.8,
-    # short sturdy legs as on ref.png
-    leg_scale=0.42, leg_pull=(60, 60), ground=945, leg_widen=1.7,
+    # slim legs, long enough to carry the body clear of the ground (0.41 read as stubs folded under the belly)
+    leg_scale=0.5, leg_pull=(68, 70), ground=930, leg_widen=1.1,
+    # thigh over shin over foot; each cut end (where a ball was) melts into the piece under it: no flat edge shows
+    legs_down=True, joint_fade=0,
+    no_caps=tuple(f"{leg}_{seg}" for leg in ("hind_near", "hind_far") for seg in ("upper", "lower", "paw")),
+    # the body rides up on the longer legs (drop < 0), the thighs a little lower on it (raise < 0): a soft bend at
+    # the knee, not a tight V
+    crouch={"drop": -45, "raise": {"hind": -70}},
     body={
         "fan_1": dict(src_img=BODY, src=(708, 514), img_scale=0.72, at=(602, 49), rot=-16),   # pink
         "fan_2": dict(src_img=BODY, src=(708, 514), img_scale=0.72, at=(602, 49), rot=18),   # pink
@@ -46,9 +55,13 @@ CONFIG = dict(
     },
     # a ground bird: never flies; fan = how far each feather turns (rad) when the tail opens wider than
     # drawn (strikes): away from the middle of the fan, so it spreads both ways
-    motion={"noFly": True, "sleepTail": [0, 0, 0], "wingSpread": [0, 0], "stance": [0, -60],
+    motion={"noFly": True, "sleepTail": [0, 0, 0], "wingSpread": [0, 0], "stance": [0, -50], "hindKnee": "back",
+            # a bird's walk: short low steps on back-bending legs, the head bobbing with every step
+            "stride": 60, "liftScale": 0.45, "headBob": 0.05,
             "fan": [-0.415, -0.208, 0.0, 0.208, 0.415, -0.312, -0.104, 0.104, 0.312, -0.244, -0.012, 0.22, -0.171, 0.037, 0.244]},
     # the legs come out from under the body: drawn behind it (the thighs are hidden by the belly)
     behind=[f"{leg}_{seg}" for leg in ("hind_far", "hind_near") for seg in ("upper", "lower", "paw")],
-    legs={"hind_near": dict(col=1, x=430), "hind_far": dict(col=3, x=600)},
+    # a biped: both hips together under the middle of the belly (the far one a touch behind, for depth) so
+    # the two legs scissor round one point; set apart they read as a front and a back leg, one stepping
+    legs={"hind_near": dict(col=1, x=490), "hind_far": dict(col=3, x=515)},
 )

@@ -23,6 +23,8 @@ ICON_NAMES = [
     "chest", "cards", "currency", "mail",
     "map", "settings", "friends", "ranking",
 ]
+# replaced by assets/ui/menu_icons.png (tools/slice_menu_icons.py), or no longer used
+OLD = {"shop", "gift", "battle", "achievement", "quest", "profile", "chest", "cards", "currency", "mail", "settings", "friends", "ranking"}
 ICON_SIZE = 128   # px, square; shown at ~56 px so they stay sharp on retina screens
 
 
@@ -59,6 +61,8 @@ def main():
             side = max(icon.size)
             square = Image.new("RGBA", (side, side))
             square.alpha_composite(icon, ((side - icon.width) // 2, (side - icon.height) // 2))
+            if ICON_NAMES[r * 4 + c] in OLD:   # slice_menu_icons.py draws these now
+                continue
             square.resize((ICON_SIZE, ICON_SIZE), Image.LANCZOS).save(
                 UI_OUT / f"{ICON_NAMES[r * 4 + c]}.png", optimize=True
             )

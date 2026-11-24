@@ -31,7 +31,8 @@ CONFIG = dict(
     parents={"jaw": "head"},
     # hind legs are drawn with the knee bent back (like the front ones): keep it that way in the IK
     motion={"sleepTail": [0.12, 0, 0], "hindKnee": "back", "noFly": True, "swingTilt": 0.15,
-            "stride": 80},   # shorter steps: its 2-piece legs open at the knee when bent far,
+            "stride": 80,   # shorter steps: its 2-piece legs open at the knee when bent far,
+            "stance": [0, 0]},   # far legs drawn a step ahead of the near ones: all four show
     legs={"fore_near": dict(col=0, x=420), "hind_near": dict(col=1, x=780),
-          "fore_far": dict(col=2, x=460), "hind_far": dict(col=3, x=820)},
+          "fore_far": dict(col=2, x=340), "hind_far": dict(col=3, x=707)},
 )

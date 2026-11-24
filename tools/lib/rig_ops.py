@@ -30,16 +30,17 @@ def solid_x(img, y0, y1):
     return float(xs.mean()) if len(xs) else img.width / 2
 
 
-def split_tallest(col, which="tallest", band=(0.3, 0.75)):
+def split_tallest(col, which="tallest", band=(0.3, 0.75), overlap=0):
     """Split one leg piece at its narrowest row (within `band` of its height, default the middle
-    30-75%) into two pieces."""
+    30-75%) into two pieces. overlap: rows the upper piece keeps below the cut (it is drawn under the
+    lower one), so the two resized cut edges never leave a see-through line."""
     i = len(col) - 1 if which == "last" else max(range(len(col)), key=lambda k: col[k][0][3])
     (x, y, w, h), mask = col[i]
     rows = (mask[y:y + h, x:x + w] > 0).sum(axis=1)
     lo, hi = int(h * band[0]), int(h * band[1])
     cut_at = lo + int(np.argmin(rows[lo:hi]))
     top, bot = mask.copy(), mask.copy()
-    top[y + cut_at:] = 0
+    top[y + cut_at + overlap:] = 0
     bot[:y + cut_at] = 0
     def box(m):
         ys, xs = np.nonzero(m)
